@@ -1,9 +1,12 @@
 xhost +local:root
-nvidia-docker run --rm --privileged -it \
-                    -v $HOME/Documents:/root/Documents \
-                    -v $HOME/Documents/DockerCache/16.04:/var/cache/apt/archives/ \
+nvidia-docker run --rm --privileged \
+                    -it \
                     --name="caffe" \
-                    -e DISPLAY \
-                    --net=host  \
+                    --net=host \
+      	            -e DISPLAY \
+      	            -e USER \
+                    -e "http_proxy=$http_proxy"  \
+                    -e "https_proxy=$https_proxy"  \
+                    -v $HOME:/home/ahmad \
                     zack/caffe /bin/bash
 xhost -local:root

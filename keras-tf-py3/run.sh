@@ -8,7 +8,7 @@ nvidia-docker run --privileged \
 	            -e USER \
               -e "http_proxy=$http_proxy"  \
               -e "https_proxy=$https_proxy"  \
-              -v $HOME/Documents:/root/Documents \
+              -v $HOME:/home/ahmad \
               --env KERAS_BACKEND=tensorflow \
               zack/keras:tensorflow-py3 /bin/bash
 # xhost +local:root

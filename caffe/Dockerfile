@@ -1,5 +1,9 @@
 FROM nvidia/cuda:8.0-cudnn6-devel
 ENV DEBIAN_FRONTEND noninteractive
+
+ENV http_proxy=http://www-cache.fkie.fraunhofer.de:3128/
+ENV https_proxy=http://www-cache.fkie.fraunhofer.de:3128/
+
 # http://layer0.authentise.com/docker-4-useful-tips-you-may-not-know-about.html
 # pick a mirror for apt-get
 RUN echo "deb mirror://mirrors.ubuntu.com/mirrors.txt xenial main restricted universe multiverse" > /etc/apt/sources.list && \
@@ -24,6 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         wget \
         vim \
+        python-opencv \
+        cython \
         graphviz \
         libatlas-base-dev \
         libboost-all-dev \
@@ -40,6 +46,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python-numpy \
         python-pip \
         python-scipy \
+        python-tk \
         libhdf5-dev \
         sudo && \
 rm -rf /var/lib/apt/lists/*
@@ -49,23 +56,36 @@ rm -rf /var/lib/apt/lists/*
 #             libcudnn6=$CUDNN_VERSION-1+cuda8.0 \
 #             libcudnn6-dev=$CUDNN_VERSION-1+cuda8.0
 
+# add super user with existing uid and gid
+RUN groupadd ahmad -g 1000 && useradd -m -u 1000 -g 1000 ahmad && \
+    echo 'ahmad ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && chown -R ahmad:ahmad /home/ahmad
+USER ahmad
+WORKDIR "/home/ahmad"
+RUN echo 'alias sudo="sudo -HE"' >> ~/.bashrc && . ~/.bashrc
 
 ENV CAFFE_ROOT=/opt/caffe
-RUN pip install -U pip && \
-    pip install --no-cache-dir -U pip setuptools
+RUN sudo -HE mkdir -p ${CAFFE_ROOT} && sudo -HE chown ahmad:ahmad ${CAFFE_ROOT}
+RUN sudo -HE pip install -U pip && \
+    sudo -HE pip install --no-cache-dir -U pip setuptools && \
+    sudo -HE pip install --no-cache-dir -U pip easydict
 # FIXME: clone a specific git tag and use ARG instead of ENV once DockerHub supports this.
 ENV CLONE_TAG=master
 
 WORKDIR $CAFFE_ROOT
 RUN git clone -b ${CLONE_TAG} --depth 1 https://github.com/BVLC/caffe.git . && \
-    for req in $(cat python/requirements.txt) pydot; do pip install --no-cache-dir $req; done && \
+    for req in $(cat python/requirements.txt) pydot; do sudo -HE pip install --no-cache-dir $req; done && \
     mkdir build && cd build && \
     cmake -DUSE_CUDNN=1 .. && \
-    make -j"$(nproc)" && make install
+    make -j"$(nproc)" && make -j"$(nproc)" pycaffe && \
+    sudo -HE make install
 
 ENV PYCAFFE_ROOT $CAFFE_ROOT/python
 ENV PYTHONPATH $PYCAFFE_ROOT:$PYTHONPATH
 ENV PATH $CAFFE_ROOT/build/tools:$PYCAFFE_ROOT:$PATH
-RUN echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf && ldconfig
+RUN sudo -HE sh -c 'echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf' && \
+    sudo -HE ldconfig
 
-WORKDIR /root
+ENV QT_X11_NO_MITSHM 1
+WORKDIR "/home/ahmad"
+
+CMD ["/bin/bash"]
