@@ -70,6 +70,11 @@ RUN apt-get update -qq \
 RUN sudo pip3 --no-cache-dir install http://download.pytorch.org/whl/cu80/torch-0.1.12.post2-cp35-cp35m-linux_x86_64.whl
 RUN sudo pip3 --no-cache-dir install torchvision
 
+RUN sudo mkdir /app && sudo chown ahmad:ahmad /app
+WORKDIR /app
+
+RUN git clone https://github.com/pytorch/examples.git
+
 ENV QT_X11_NO_MITSHM 1
 
 CMD ["/bin/bash"]
