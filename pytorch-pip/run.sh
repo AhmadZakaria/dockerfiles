@@ -8,5 +8,5 @@ nvidia-docker run --privileged \
               -e "http_proxy=$http_proxy"  \
               -e "https_proxy=$https_proxy"  \
               -v $HOME:/home/ahmad \
-              zack/pytorch:py3 /bin/bash
+              zack/pytorch:pip3 /bin/bash
 xhost -local:root
